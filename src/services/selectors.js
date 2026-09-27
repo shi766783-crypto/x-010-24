@@ -28,6 +28,16 @@ export function planSpendBreakdown(plan) {
   }, {})
 }
 
+// 单次出行记录最多的地点（行程内容出现次数最多，无则返回空串）
+export function planTopLocation(plan) {
+  const counts = {}
+  ;(plan.records || []).forEach((r) => {
+    const key = (r.itinerary || '').trim()
+    if (key) counts[key] = (counts[key] || 0) + 1
+  })
+  return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || ''
+}
+
 // 单次出行行李打包完成率（各成员平均）
 export function planPackingRate(plan) {
   const lists = plan.luggage || []

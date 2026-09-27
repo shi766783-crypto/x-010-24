@@ -1,6 +1,8 @@
 <script setup>
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useTravelStore } from '../../stores/travel'
+import { planTotalSpend, planTopLocation } from '../../services/selectors'
+import { formatMoney } from '../../utils/format'
 import StarRating from '../common/StarRating.vue'
 
 const props = defineProps({
@@ -8,6 +10,11 @@ const props = defineProps({
 })
 
 const store = useTravelStore()
+
+// 本次出行参考数据（只读，不随总结保存）
+const hasRecords = computed(() => (props.plan.records || []).length > 0)
+const totalSpend = computed(() => planTotalSpend(props.plan))
+const topLocation = computed(() => planTopLocation(props.plan))
 
 const form = reactive({
   rating: props.plan.summary?.rating || 0,
@@ -54,6 +61,25 @@ function save() {
 
 <template>
   <div class="summary">
+    <!-- 本次出行参考数据（只读） -->
+    <div class="trip-stats">
+      <span class="trip-stats-title text-muted">本次出行参考</span>
+      <div class="trip-stats-grid">
+        <div class="stat">
+          <span class="stat-label">出行天数</span>
+          <strong>{{ plan.days }} 天</strong>
+        </div>
+        <div v-if="hasRecords" class="stat">
+          <span class="stat-label">总花费</span>
+          <strong>{{ formatMoney(totalSpend) }}</strong>
+        </div>
+        <div v-if="topLocation" class="stat">
+          <span class="stat-label">记录最多的地点</span>
+          <strong>{{ topLocation }}</strong>
+        </div>
+      </div>
+    </div>
+
     <div class="form-group">
       <label class="form-label">总体评分</label>
       <StarRating v-model="form.rating" size="28px" />
@@ -95,6 +121,39 @@ function save() {
 </template>
 
 <style scoped>
+.trip-stats {
+  margin-bottom: 20px;
+}
+
+.trip-stats-title {
+  font-size: 12px;
+}
+
+.trip-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.stat {
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.stat strong {
+  font-size: 16px;
+  margin-top: 2px;
+}
+
 .photo-grid {
   display: flex;
   gap: 10px;
