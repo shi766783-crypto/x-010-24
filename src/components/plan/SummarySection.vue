@@ -1,6 +1,8 @@
 <script setup>
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useTravelStore } from '../../stores/travel'
+import { planTotalSpend, planTopItinerary } from '../../services/selectors'
+import { formatMoney } from '../../utils/format'
 import StarRating from '../common/StarRating.vue'
 
 const props = defineProps({
@@ -8,6 +10,11 @@ const props = defineProps({
 })
 
 const store = useTravelStore()
+
+// 本次出行统计参考（只读）：天数来自计划日期，花费与地点来自行程记录
+const hasRecords = computed(() => (props.plan.records || []).length > 0)
+const totalSpend = computed(() => planTotalSpend(props.plan))
+const topItinerary = computed(() => planTopItinerary(props.plan))
 
 const form = reactive({
   rating: props.plan.summary?.rating || 0,
@@ -54,6 +61,26 @@ function save() {
 
 <template>
   <div class="summary">
+    <!-- 本次出行统计参考（只读） -->
+    <div class="trip-stats">
+      <div class="stat-item">
+        <span class="stat-label">出行天数</span>
+        <strong>{{ plan.days }} 天</strong>
+      </div>
+      <!-- 无行程记录时不显示花费占位，避免 ¥0 误导 -->
+      <template v-if="hasRecords">
+        <div class="stat-item">
+          <span class="stat-label">总花费</span>
+          <strong>{{ formatMoney(totalSpend) }}</strong>
+        </div>
+        <div v-if="topItinerary" class="stat-item">
+          <span class="stat-label">记录最多的地点</span>
+          <strong>{{ topItinerary.name }}</strong>
+          <span class="stat-sub text-muted">共 {{ topItinerary.count }} 条记录</span>
+        </div>
+      </template>
+    </div>
+
     <div class="form-group">
       <label class="form-label">总体评分</label>
       <StarRating v-model="form.rating" size="28px" />
@@ -95,6 +122,36 @@ function save() {
 </template>
 
 <style scoped>
+.trip-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.stat-item {
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.stat-item strong {
+  font-size: 16px;
+  margin-top: 2px;
+}
+
+.stat-sub {
+  font-size: 12px;
+  margin-top: 2px;
+}
+
 .photo-grid {
   display: flex;
   gap: 10px;
